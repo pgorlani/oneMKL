@@ -71,7 +71,7 @@ void ContextCallback(void *userData) {
     auto handle = ptr->exchange(nullptr);
     if (handle != nullptr) {
         cusolverStatus_t err1;
-        CUSOLVER_ERROR_FUNC(cusolverDnDestroy, err1, handle);
+        CUSOLVER_ERROR_FUNC("cusolverDnDestroy", cusolverDnDestroy, err1, handle);
         handle = nullptr;
     }
     else {
@@ -96,9 +96,9 @@ cusolverDnHandle_t CusolverScopedContextHandler::get_handle(const cl::sycl::queu
             auto handle = it->second->load();
             if (handle != nullptr) {
                 cudaStream_t currentStreamId;
-                CUSOLVER_ERROR_FUNC(cusolverDnGetStream, err, handle, &currentStreamId);
+                CUSOLVER_ERROR_FUNC("cusolverDnGetStream", cusolverDnGetStream, err, handle, &currentStreamId);
                 if (currentStreamId != streamId) {
-                    CUSOLVER_ERROR_FUNC(cusolverDnSetStream, err, handle, streamId);
+                    CUSOLVER_ERROR_FUNC("cusolverDnSetStream", cusolverDnSetStream, err, handle, streamId);
                 }
                 return handle;
             }
@@ -110,8 +110,8 @@ cusolverDnHandle_t CusolverScopedContextHandler::get_handle(const cl::sycl::queu
 
     cusolverDnHandle_t handle;
 
-    CUSOLVER_ERROR_FUNC(cusolverDnCreate, err, &handle);
-    CUSOLVER_ERROR_FUNC(cusolverDnSetStream, err, handle, streamId);
+    CUSOLVER_ERROR_FUNC("cusolverDnCreate", cusolverDnCreate, err, &handle);
+    CUSOLVER_ERROR_FUNC("cusolverDnSetStream", cusolverDnSetStream, err, handle, streamId);
 
     auto insert_iter = handle_helper.cusolver_handle_mapper_.insert(
         std::make_pair(piPlacedContext_, new std::atomic<cusolverDnHandle_t>(handle)));

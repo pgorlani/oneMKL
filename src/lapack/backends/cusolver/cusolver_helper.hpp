@@ -167,10 +167,10 @@ public:
         throw cuda_error(std::string(#name) + std::string(" : "), err); \
     }
 
-#define CUSOLVER_ERROR_FUNC(name, err, ...)                                 \
-    err = name(__VA_ARGS__);                                                \
+#define CUSOLVER_ERROR_FUNC(name, func, err, ...)                                 \
+    err = func(__VA_ARGS__);                                                \
     if (err != CUSOLVER_STATUS_SUCCESS) {                                   \
-        throw cusolver_error(std::string(#name) + std::string(" : "), err); \
+        throw cusolver_error(std::string(name) + std::string(" : "), err); \
     }
 
 inline cusolverEigType_t get_cusolver_itype(std::int64_t itype) {

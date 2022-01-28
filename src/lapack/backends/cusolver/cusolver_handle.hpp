@@ -36,7 +36,7 @@ struct cusolver_handle {
             if (handle_pair.second != nullptr) {
                 auto handle = handle_pair.second->exchange(nullptr);
                 if (handle != nullptr) {
-                    CUSOLVER_ERROR_FUNC(cusolverDnDestroy, err, handle);
+                    CUSOLVER_ERROR_FUNC("cusolverDnDestroy", cusolverDnDestroy, err, handle);
                     handle = nullptr;
                 }
                 else {
