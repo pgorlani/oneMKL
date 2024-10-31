@@ -328,3 +328,52 @@ inline sycl::event spsv(backend_selector<backend::BACKEND> selector, oneapi::mkl
     return BACKEND::spsv(selector.get_queue(), opA, alpha, A_view, A_handle, x_handle, y_handle,
                          alg, spsv_descr, dependencies);
 }
+
+// SPSM
+inline void init_spsm_descr(backend_selector<backend::BACKEND> selector,
+                            spsm_descr_t* p_spsm_descr) {
+    BACKEND::init_spsm_descr(selector.get_queue(), p_spsm_descr);
+}
+
+inline sycl::event release_spsm_descr(backend_selector<backend::BACKEND> selector,
+                                      spsm_descr_t spsm_descr,
+                                      const std::vector<sycl::event>& dependencies = {}) {
+    return BACKEND::release_spsm_descr(selector.get_queue(), spsm_descr, dependencies);
+}
+
+inline void spsm_buffer_size(backend_selector<backend::BACKEND> selector,
+                             oneapi::mkl::transpose opA, const void* alpha, matrix_view A_view,
+                             matrix_handle_t A_handle, dense_vector_handle_t x_handle,
+                             dense_vector_handle_t y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
+                             std::size_t& temp_buffer_size) {
+    BACKEND::spsm_buffer_size(selector.get_queue(), opA, alpha, A_view, A_handle, x_handle,
+                              y_handle, alg, spsm_descr, temp_buffer_size);
+}
+
+inline void spsm_optimize(backend_selector<backend::BACKEND> selector, oneapi::mkl::transpose opA,
+                          const void* alpha, matrix_view A_view, matrix_handle_t A_handle,
+                          dense_vector_handle_t x_handle, dense_vector_handle_t y_handle,
+                          spsm_alg alg, spsm_descr_t spsm_descr,
+                          sycl::buffer<std::uint8_t, 1> workspace) {
+    BACKEND::spsm_optimize(selector.get_queue(), opA, alpha, A_view, A_handle, x_handle, y_handle,
+                           alg, spsm_descr, workspace);
+}
+
+inline sycl::event spsm_optimize(backend_selector<backend::BACKEND> selector,
+                                 oneapi::mkl::transpose opA, const void* alpha, matrix_view A_view,
+                                 matrix_handle_t A_handle, dense_vector_handle_t x_handle,
+                                 dense_vector_handle_t y_handle, spsm_alg alg,
+                                 spsm_descr_t spsm_descr, void* workspace,
+                                 const std::vector<sycl::event>& dependencies = {}) {
+    return BACKEND::spsm_optimize(selector.get_queue(), opA, alpha, A_view, A_handle, x_handle,
+                                  y_handle, alg, spsm_descr, workspace, dependencies);
+}
+
+inline sycl::event spsm(backend_selector<backend::BACKEND> selector, oneapi::mkl::transpose opA,
+                        const void* alpha, matrix_view A_view, matrix_handle_t A_handle,
+                        dense_vector_handle_t x_handle, dense_vector_handle_t y_handle,
+                        spsm_alg alg, spsm_descr_t spsm_descr,
+                        const std::vector<sycl::event>& dependencies = {}) {
+    return BACKEND::spsm(selector.get_queue(), opA, alpha, A_view, A_handle, x_handle, y_handle,
+                         alg, spsm_descr, dependencies);
+}

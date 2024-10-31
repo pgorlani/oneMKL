@@ -66,6 +66,11 @@ enum class spsv_alg {
     no_optimize_alg,
 };
 
+enum class spsm_alg {
+    default_alg,
+    no_optimize_alg,
+};
+
 } // namespace sparse
 } // namespace mkl
 } // namespace oneapi

@@ -257,6 +257,49 @@ typedef struct {
                         oneapi::mkl::sparse::spsv_alg alg,
                         oneapi::mkl::sparse::spsv_descr_t spsv_descr,
                         const std::vector<sycl::event>& dependencies);
+
+    // SPSM
+    void (*init_spsm_descr)(sycl::queue& queue, oneapi::mkl::sparse::spsm_descr_t* p_spsm_descr);
+
+    sycl::event (*release_spsm_descr)(sycl::queue& queue,
+                                      oneapi::mkl::sparse::spsm_descr_t spsm_descr,
+                                      const std::vector<sycl::event>& dependencies);
+
+    void (*spsm_buffer_size)(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
+                             oneapi::mkl::sparse::matrix_view A_view,
+                             oneapi::mkl::sparse::matrix_handle_t A_handle,
+                             oneapi::mkl::sparse::dense_vector_handle_t x_handle,
+                             oneapi::mkl::sparse::dense_vector_handle_t y_handle,
+                             oneapi::mkl::sparse::spsm_alg alg,
+                             oneapi::mkl::sparse::spsm_descr_t spsm_descr,
+                             std::size_t& temp_buffer_size);
+
+    void (*spsm_optimize_buffer)(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
+                                 oneapi::mkl::sparse::matrix_view A_view,
+                                 oneapi::mkl::sparse::matrix_handle_t A_handle,
+                                 oneapi::mkl::sparse::dense_vector_handle_t x_handle,
+                                 oneapi::mkl::sparse::dense_vector_handle_t y_handle,
+                                 oneapi::mkl::sparse::spsm_alg alg,
+                                 oneapi::mkl::sparse::spsm_descr_t spsm_descr,
+                                 sycl::buffer<std::uint8_t, 1> workspace);
+
+    sycl::event (*spsm_optimize_usm)(sycl::queue& queue, oneapi::mkl::transpose opA,
+                                     const void* alpha, oneapi::mkl::sparse::matrix_view A_view,
+                                     oneapi::mkl::sparse::matrix_handle_t A_handle,
+                                     oneapi::mkl::sparse::dense_vector_handle_t x_handle,
+                                     oneapi::mkl::sparse::dense_vector_handle_t y_handle,
+                                     oneapi::mkl::sparse::spsm_alg alg,
+                                     oneapi::mkl::sparse::spsm_descr_t spsm_descr, void* workspace,
+                                     const std::vector<sycl::event>& dependencies);
+
+    sycl::event (*spsm)(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
+                        oneapi::mkl::sparse::matrix_view A_view,
+                        oneapi::mkl::sparse::matrix_handle_t A_handle,
+                        oneapi::mkl::sparse::dense_vector_handle_t x_handle,
+                        oneapi::mkl::sparse::dense_vector_handle_t y_handle,
+                        oneapi::mkl::sparse::spsm_alg alg,
+                        oneapi::mkl::sparse::spsm_descr_t spsm_descr,
+                        const std::vector<sycl::event>& dependencies);
 } sparse_blas_function_table_t;
 
 #undef DEFINE_DENSE_VECTOR_FUNCS

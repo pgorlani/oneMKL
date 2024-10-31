@@ -112,4 +112,12 @@ oneapi::mkl::sparse::BACKEND::spsv_optimize,
 oneapi::mkl::sparse::BACKEND::spsv_optimize,
 oneapi::mkl::sparse::BACKEND::spsv,
 
+// SPSM
+oneapi::mkl::sparse::BACKEND::init_spsm_descr,
+oneapi::mkl::sparse::BACKEND::release_spsm_descr,
+oneapi::mkl::sparse::BACKEND::spsm_buffer_size,
+oneapi::mkl::sparse::BACKEND::spsm_optimize,
+oneapi::mkl::sparse::BACKEND::spsm_optimize,
+oneapi::mkl::sparse::BACKEND::spsm,
+
     // clang-format on

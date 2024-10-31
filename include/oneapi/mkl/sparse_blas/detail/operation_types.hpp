@@ -33,6 +33,9 @@ using spmv_descr_t = spmv_descr*;
 struct spsv_descr;
 using spsv_descr_t = spsv_descr*;
 
+struct spsm_descr;
+using spsm_descr_t = spsm_descr*;
+
 } // namespace oneapi::mkl::sparse
 
 #endif // _ONEMKL_SPARSE_BLAS_DETAIL_OPERATION_TYPES_HPP_

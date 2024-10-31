@@ -29,6 +29,7 @@ add_library(${LIB_OBJ} OBJECT
   operations/cusparse_spmm.cpp
   operations/cusparse_spmv.cpp
   operations/cusparse_spsv.cpp
+  operations/cusparse_spsm.cpp
   $<$<BOOL:${BUILD_SHARED_LIBS}>: cusparse_wrappers.cpp>
 )
 add_dependencies(onemkl_backend_libs_sparse_blas ${LIB_NAME})

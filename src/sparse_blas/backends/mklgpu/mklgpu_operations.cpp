@@ -31,5 +31,6 @@
 #include "sparse_blas/backends/mkl_common/mkl_spmm.cxx"
 #include "sparse_blas/backends/mkl_common/mkl_spmv.cxx"
 #include "sparse_blas/backends/mkl_common/mkl_spsv.cxx"
+#include "sparse_blas/backends/mkl_common/mkl_spsm.cxx"
 
 #undef BACKEND
