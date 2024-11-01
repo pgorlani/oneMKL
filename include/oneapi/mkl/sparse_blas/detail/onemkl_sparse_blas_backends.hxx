@@ -222,28 +222,38 @@ ONEMKL_EXPORT void init_spsm_descr(sycl::queue& queue, spsm_descr_t* p_spsm_desc
 ONEMKL_EXPORT sycl::event release_spsm_descr(sycl::queue& queue, spsm_descr_t spsm_descr,
                                              const std::vector<sycl::event>& dependencies = {});
 
-ONEMKL_EXPORT void spsm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA,
-                                    const void* alpha, matrix_view A_view, matrix_handle_t A_handle,
-                                    dense_vector_handle_t x_handle, dense_vector_handle_t y_handle,
+ONEMKL_EXPORT void spsm_buffer_size(sycl::queue& queue,
+                             oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                             const void* alpha, matrix_view A_view,
+                             matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                             dense_matrix_handle_t Y_handle,
                                     spsm_alg alg, spsm_descr_t spsm_descr,
                                     std::size_t& temp_buffer_size);
 
-ONEMKL_EXPORT void spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
-                                 matrix_view A_view, matrix_handle_t A_handle,
-                                 dense_vector_handle_t x_handle, dense_vector_handle_t y_handle,
+ONEMKL_EXPORT void spsm_optimize(sycl::queue& queue,
+                             oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                             const void* alpha, matrix_view A_view,
+                             matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                             dense_matrix_handle_t Y_handle,
+ 
+
                                  spsm_alg alg, spsm_descr_t spsm_descr,
                                  sycl::buffer<std::uint8_t, 1> workspace);
 
-ONEMKL_EXPORT sycl::event spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA,
-                                        const void* alpha, matrix_view A_view,
-                                        matrix_handle_t A_handle, dense_vector_handle_t x_handle,
-                                        dense_vector_handle_t y_handle, spsm_alg alg,
+ONEMKL_EXPORT sycl::event spsm_optimize(sycl::queue& queue,
+                             oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                             const void* alpha, matrix_view A_view,
+                             matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                             dense_matrix_handle_t Y_handle,
+                                        spsm_alg alg,
                                         spsm_descr_t spsm_descr, void* workspace,
                                         const std::vector<sycl::event>& dependencies = {});
 
-ONEMKL_EXPORT sycl::event spsm(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
-                               matrix_view A_view, matrix_handle_t A_handle,
-                               dense_vector_handle_t x_handle, dense_vector_handle_t y_handle,
+ONEMKL_EXPORT sycl::event spsm(sycl::queue& queue,
+                             oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                             const void* alpha, matrix_view A_view,
+                             matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                             dense_matrix_handle_t Y_handle,
                                spsm_alg alg, spsm_descr_t spsm_descr,
                                const std::vector<sycl::event>& dependencies = {});
 

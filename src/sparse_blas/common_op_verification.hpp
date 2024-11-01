@@ -135,13 +135,13 @@ void check_valid_spsv_common(const std::string& function_name, matrix_view A_vie
 template <typename InternalSparseMatHandleT>
 void check_valid_spsm_common(const std::string& function_name, matrix_view A_view,
                              InternalSparseMatHandleT internal_A_handle,
-                             dense_vector_handle_t x_handle, dense_vector_handle_t y_handle,
+                             dense_matrix_handle_t X_handle, dense_matrix_handle_t Y_handle,
                              bool is_alpha_host_accessible) {
     THROW_IF_NULLPTR(function_name, internal_A_handle);
-    THROW_IF_NULLPTR(function_name, x_handle);
-    THROW_IF_NULLPTR(function_name, y_handle);
+    THROW_IF_NULLPTR(function_name, X_handle);
+    THROW_IF_NULLPTR(function_name, Y_handle);
 
-    check_all_containers_compatible(function_name, internal_A_handle, x_handle, y_handle);
+    check_all_containers_compatible(function_name, internal_A_handle, X_handle, Y_handle);
     if (A_view.type_view != matrix_descr::triangular) {
         throw mkl::invalid_argument(
             "sparse_blas", function_name,

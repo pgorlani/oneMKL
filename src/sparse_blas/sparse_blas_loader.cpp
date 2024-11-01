@@ -371,41 +371,52 @@ sycl::event release_spsm_descr(sycl::queue& queue, spsm_descr_t spsm_descr,
     return function_tables[{ libkey, queue }].release_spsm_descr(queue, spsm_descr, dependencies);
 }
 
-void spsm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
-                      matrix_view A_view, matrix_handle_t A_handle, dense_vector_handle_t x_handle,
-                      dense_vector_handle_t y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
+void spsm_buffer_size(sycl::queue& queue,
+                      oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                      const void* alpha,
+                      matrix_view A_view, matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                      dense_matrix_handle_t Y_handle,
+                      spsm_alg alg, spsm_descr_t spsm_descr,
                       std::size_t& temp_buffer_size) {
     auto libkey = get_device_id(queue);
     function_tables[{ libkey, queue }].spsm_buffer_size(
-        queue, opA, alpha, A_view, A_handle, x_handle, y_handle, alg, spsm_descr, temp_buffer_size);
+        queue, opA, opX, alpha, A_view, A_handle, X_handle, Y_handle, alg, spsm_descr, temp_buffer_size);
 }
 
-void spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
-                   matrix_view A_view, matrix_handle_t A_handle, dense_vector_handle_t x_handle,
-                   dense_vector_handle_t y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
+void spsm_optimize(sycl::queue& queue,
+                      oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                      const void* alpha,
+                      matrix_view A_view, matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                      dense_matrix_handle_t Y_handle,
+                   spsm_alg alg, spsm_descr_t spsm_descr,
                    sycl::buffer<std::uint8_t, 1> workspace) {
     auto libkey = get_device_id(queue);
     function_tables[{ libkey, queue }].spsm_optimize_buffer(
-        queue, opA, alpha, A_view, A_handle, x_handle, y_handle, alg, spsm_descr, workspace);
+        queue, opA, opX, alpha, A_view, A_handle, X_handle, Y_handle, alg, spsm_descr, workspace);
 }
 
-sycl::event spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
-                          matrix_view A_view, matrix_handle_t A_handle,
-                          dense_vector_handle_t x_handle, dense_vector_handle_t y_handle,
+sycl::event spsm_optimize(sycl::queue& queue,
+                      oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                      const void* alpha,
+                      matrix_view A_view, matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                      dense_matrix_handle_t Y_handle,
                           spsm_alg alg, spsm_descr_t spsm_descr, void* workspace,
                           const std::vector<sycl::event>& dependencies) {
     auto libkey = get_device_id(queue);
-    return function_tables[{ libkey, queue }].spsm_optimize_usm(queue, opA, alpha, A_view, A_handle,
-                                                                x_handle, y_handle, alg, spsm_descr,
+    return function_tables[{ libkey, queue }].spsm_optimize_usm(queue, opA, opX, alpha, A_view, A_handle,
+                                                                X_handle, Y_handle, alg, spsm_descr,
                                                                 workspace, dependencies);
 }
 
-sycl::event spsm(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
-                 matrix_view A_view, matrix_handle_t A_handle, dense_vector_handle_t x_handle,
-                 dense_vector_handle_t y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
+sycl::event spsm(sycl::queue& queue,
+                      oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                      const void* alpha,
+                      matrix_view A_view, matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                      dense_matrix_handle_t Y_handle,
+                  spsm_alg alg, spsm_descr_t spsm_descr,
                  const std::vector<sycl::event>& dependencies) {
     auto libkey = get_device_id(queue);
-    return function_tables[{ libkey, queue }].spsm(queue, opA, alpha, A_view, A_handle, x_handle,
-                                                   y_handle, alg, spsm_descr, dependencies);
+    return function_tables[{ libkey, queue }].spsm(queue, opA, opX, alpha, A_view, A_handle, X_handle,
+                                                   Y_handle, alg, spsm_descr, dependencies);
 }
 } // namespace oneapi::mkl::sparse

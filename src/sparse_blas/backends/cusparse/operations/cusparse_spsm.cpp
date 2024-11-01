@@ -38,15 +38,16 @@ struct spsm_descr {
     CUstream cu_stream;
     cusparseHandle_t cu_handle;
 
-    cusparseSpSVDescr_t cu_descr;
+    cusparseSpSMDescr_t cu_descr;
     detail::generic_container workspace;
     bool buffer_size_called = false;
     bool optimized_called = false;
     oneapi::mkl::transpose last_optimized_opA;
+    oneapi::mkl::transpose last_optimized_opX;
     matrix_view last_optimized_A_view;
     matrix_handle_t last_optimized_A_handle;
-    dense_vector_handle_t last_optimized_x_handle;
-    dense_vector_handle_t last_optimized_y_handle;
+    dense_matrix_handle_t last_optimized_X_handle;
+    dense_matrix_handle_t last_optimized_Y_handle;
     spsm_alg last_optimized_alg;
 };
 
@@ -57,22 +58,23 @@ namespace oneapi::mkl::sparse::cusparse {
 namespace detail {
 
 inline auto get_cuda_spsm_alg(spsm_alg /*alg*/) {
-    return CUSPARSE_SPSV_ALG_DEFAULT;  // <----------------------------------------------
+    return CUSPARSE_SPSM_ALG_DEFAULT;  // <----------------------------------------------
 }
 
 void check_valid_spsm(const std::string& function_name, matrix_view A_view,
-                      matrix_handle_t A_handle, dense_vector_handle_t x_handle,
-                      dense_vector_handle_t y_handle, bool is_alpha_host_accessible) {
-    check_valid_spsm_common(function_name, A_view, A_handle, x_handle, y_handle,
+                      matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                      dense_matrix_handle_t Y_handle, bool is_alpha_host_accessible) {
+    check_valid_spsm_common(function_name, A_view, A_handle, X_handle, Y_handle,
                             is_alpha_host_accessible);
     check_valid_matrix_properties(function_name, A_handle);
 }
 
-inline void common_spsm_optimize(oneapi::mkl::transpose opA, bool is_alpha_host_accessible,
+inline void common_spsm_optimize(oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                                 bool is_alpha_host_accessible,
                                  matrix_view A_view, matrix_handle_t A_handle,
-                                 dense_vector_handle_t x_handle, dense_vector_handle_t y_handle,
+                                 dense_matrix_handle_t X_handle, dense_matrix_handle_t Y_handle,
                                  spsm_alg alg, spsm_descr_t spsm_descr) {
-    check_valid_spsm("spsm_optimize", A_view, A_handle, x_handle, y_handle,
+    check_valid_spsm("spsm_optimize", A_view, A_handle, X_handle, Y_handle,
                      is_alpha_host_accessible);
     if (!spsm_descr->buffer_size_called) {
         throw mkl::uninitialized("sparse_blas", "spsm_optimize",
@@ -80,29 +82,33 @@ inline void common_spsm_optimize(oneapi::mkl::transpose opA, bool is_alpha_host_
     }
     spsm_descr->optimized_called = true;
     spsm_descr->last_optimized_opA = opA;
+    spsm_descr->last_optimized_opA = opX;
     spsm_descr->last_optimized_A_view = A_view;
     spsm_descr->last_optimized_A_handle = A_handle;
-    spsm_descr->last_optimized_x_handle = x_handle;
-    spsm_descr->last_optimized_y_handle = y_handle;
+    spsm_descr->last_optimized_X_handle = X_handle;
+    spsm_descr->last_optimized_Y_handle = Y_handle;
     spsm_descr->last_optimized_alg = alg;
 }
 
-void spsm_optimize_impl(cusparseHandle_t cu_handle, oneapi::mkl::transpose opA, const void* alpha,
+void spsm_optimize_impl(cusparseHandle_t cu_handle, oneapi::mkl::transpose opA,
+                        oneapi::mkl::transpose opX, 
+                        const void* alpha,
                         matrix_view A_view, matrix_handle_t A_handle,
-                        dense_vector_handle_t x_handle, dense_vector_handle_t y_handle,
+                        dense_matrix_handle_t X_handle, dense_matrix_handle_t Y_handle,
                         spsm_alg alg, spsm_descr_t spsm_descr, void* workspace_ptr,
                         bool is_alpha_host_accessible) {
     auto cu_a = A_handle->backend_handle;
-    auto cu_x = x_handle->backend_handle;
-    auto cu_y = y_handle->backend_handle;
+    auto cu_x = X_handle->backend_handle;
+    auto cu_y = Y_handle->backend_handle;
     auto type = A_handle->value_container.data_type;
     set_matrix_attributes("spsm_optimize", cu_a, A_view);
-    auto cu_op = get_cuda_operation(type, opA);
+    auto cu_opA = get_cuda_operation(type, opA);
+    auto cu_opX = get_cuda_operation(type, opX);
     auto cu_type = get_cuda_value_type(type);
     auto cu_alg = get_cuda_spsm_alg(alg);
     auto cu_descr = spsm_descr->cu_descr;
     set_pointer_mode(cu_handle, is_alpha_host_accessible);
-    auto status = cusparseSpSV_analysis(cu_handle, cu_op, alpha, cu_a, cu_x, cu_y, cu_type, cu_alg,
+    auto status = cusparseSpSM_analysis(cu_handle, cu_opA, cu_opX, alpha, cu_a, cu_x, cu_y, cu_type, cu_alg,
                                         cu_descr, workspace_ptr);
     check_status(status, "spsm_optimize");
 }
@@ -111,7 +117,7 @@ void spsm_optimize_impl(cusparseHandle_t cu_handle, oneapi::mkl::transpose opA, 
 
 void init_spsm_descr(sycl::queue& /*queue*/, spsm_descr_t* p_spsm_descr) {
     *p_spsm_descr = new spsm_descr();
-    CUSPARSE_ERR_FUNC(cusparseSpSV_createDescr, &(*p_spsm_descr)->cu_descr);
+    CUSPARSE_ERR_FUNC(cusparseSpSM_createDescr, &(*p_spsm_descr)->cu_descr);
 }
 
 sycl::event release_spsm_descr(sycl::queue& queue, spsm_descr_t spsm_descr,
@@ -121,12 +127,12 @@ sycl::event release_spsm_descr(sycl::queue& queue, spsm_descr_t spsm_descr,
     }
 
     auto release_functor = [=]() {
-        CUSPARSE_ERR_FUNC(cusparseSpSV_destroyDescr, spsm_descr->cu_descr);
+        CUSPARSE_ERR_FUNC(cusparseSpSM_destroyDescr, spsm_descr->cu_descr);
         spsm_descr->cu_handle = nullptr;
         spsm_descr->cu_descr = nullptr;
         spsm_descr->last_optimized_A_handle = nullptr;
-        spsm_descr->last_optimized_x_handle = nullptr;
-        spsm_descr->last_optimized_y_handle = nullptr;
+        spsm_descr->last_optimized_X_handle = nullptr;
+        spsm_descr->last_optimized_Y_handle = nullptr;
         delete spsm_descr;
     };
 
@@ -134,15 +140,15 @@ sycl::event release_spsm_descr(sycl::queue& queue, spsm_descr_t spsm_descr,
     // dispatch_submit can only be used if the descriptor's handles are valid
     if (spsm_descr->last_optimized_A_handle &&
         spsm_descr->last_optimized_A_handle->all_use_buffer() &&
-        spsm_descr->last_optimized_x_handle && spsm_descr->last_optimized_y_handle &&
+        spsm_descr->last_optimized_X_handle && spsm_descr->last_optimized_Y_handle &&
         spsm_descr->workspace.use_buffer()) {
         auto dispatch_functor = [=](sycl::interop_handle, sycl::accessor<std::uint8_t>) {
             release_functor();
         };
         return detail::dispatch_submit(
             __func__, queue, dispatch_functor, spsm_descr->last_optimized_A_handle,
-            spsm_descr->workspace.get_buffer<std::uint8_t>(), spsm_descr->last_optimized_x_handle,
-            spsm_descr->last_optimized_y_handle);
+            spsm_descr->workspace.get_buffer<std::uint8_t>(), spsm_descr->last_optimized_X_handle,
+            spsm_descr->last_optimized_Y_handle);
     }
 
     // Release used if USM is used or if the descriptor has been released before spsm_optimize has succeeded
@@ -153,12 +159,13 @@ sycl::event release_spsm_descr(sycl::queue& queue, spsm_descr_t spsm_descr,
     return event;
 }
 
-void spsm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
-                      matrix_view A_view, matrix_handle_t A_handle, dense_vector_handle_t x_handle,
-                      dense_vector_handle_t y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
+void spsm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                      const void* alpha,
+                      matrix_view A_view, matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                      dense_matrix_handle_t Y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
                       std::size_t& temp_buffer_size) {
     bool is_alpha_host_accessible = detail::is_ptr_accessible_on_host(queue, alpha);
-    detail::check_valid_spsm(__func__, A_view, A_handle, x_handle, y_handle,
+    detail::check_valid_spsm(__func__, A_view, A_handle, X_handle, Y_handle,
                              is_alpha_host_accessible);
     auto functor = [=, &temp_buffer_size](sycl::interop_handle ih) {
         detail::CusparseScopedContextHandler sc(queue, ih);
@@ -166,34 +173,36 @@ void spsm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, const void
         spsm_descr->cu_handle = cu_handle;
         spsm_descr->cu_stream = cu_stream;
         auto cu_a = A_handle->backend_handle;
-        auto cu_x = x_handle->backend_handle;
-        auto cu_y = y_handle->backend_handle;
+        auto cu_x = X_handle->backend_handle;
+        auto cu_y = Y_handle->backend_handle;
         auto type = A_handle->value_container.data_type;
         detail::set_matrix_attributes(__func__, cu_a, A_view);
-        auto cu_op = detail::get_cuda_operation(type, opA);
+        auto cu_opA = detail::get_cuda_operation(type, opA);
+        auto cu_opX = detail::get_cuda_operation(type, opX);
         auto cu_type = detail::get_cuda_value_type(type);
         auto cu_alg = detail::get_cuda_spsm_alg(alg);
         auto cu_descr = spsm_descr->cu_descr;
         detail::set_pointer_mode(cu_handle, is_alpha_host_accessible);
-        auto status = cusparseSpSV_bufferSize(cu_handle, cu_op, alpha, cu_a, cu_x, cu_y, cu_type,
+        auto status = cusparseSpSM_bufferSize(cu_handle, cu_opA, cu_opX, alpha, cu_a, cu_x, cu_y, cu_type,
                                               cu_alg, cu_descr, &temp_buffer_size);
         detail::check_status(status, __func__);
     };
-    auto event = detail::dispatch_submit(__func__, queue, functor, A_handle, x_handle, y_handle);
+    auto event = detail::dispatch_submit(__func__, queue, functor, A_handle, X_handle, Y_handle);
     event.wait_and_throw();
     spsm_descr->buffer_size_called = true;
 }
 
-void spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
-                   matrix_view A_view, matrix_handle_t A_handle, dense_vector_handle_t x_handle,
-                   dense_vector_handle_t y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
+void spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                   const void* alpha,
+                   matrix_view A_view, matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                   dense_matrix_handle_t Y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
                    sycl::buffer<std::uint8_t, 1> workspace) {
     bool is_alpha_host_accessible = detail::is_ptr_accessible_on_host(queue, alpha);
     if (!A_handle->all_use_buffer()) {
         detail::throw_incompatible_container(__func__);
     }
-    detail::common_spsm_optimize(opA, is_alpha_host_accessible, A_view, A_handle, x_handle,
-                                 y_handle, alg, spsm_descr);
+    detail::common_spsm_optimize(opA, opX, is_alpha_host_accessible, A_view, A_handle, X_handle,
+                                 Y_handle, alg, spsm_descr);
     // Ignore spsm_alg::no_optimize_alg as this step is mandatory for cuSPARSE
     // Copy the buffer to extend its lifetime until the descriptor is free'd.
     spsm_descr->workspace.set_buffer_untyped(workspace);
@@ -202,52 +211,54 @@ void spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA, const void* a
         auto functor = [=](sycl::interop_handle ih, sycl::accessor<std::uint8_t> workspace_acc) {
             auto cu_handle = spsm_descr->cu_handle;
             auto workspace_ptr = detail::get_mem(ih, workspace_acc);
-            detail::spsm_optimize_impl(cu_handle, opA, alpha, A_view, A_handle, x_handle, y_handle,
+            detail::spsm_optimize_impl(cu_handle, opA, opX, alpha, A_view, A_handle, X_handle, Y_handle,
                                        alg, spsm_descr, workspace_ptr, is_alpha_host_accessible);
         };
 
         // The accessor can only be created if the buffer size is greater than 0
-        detail::dispatch_submit(__func__, queue, functor, A_handle, workspace, x_handle, y_handle);
+        detail::dispatch_submit(__func__, queue, functor, A_handle, workspace, X_handle, Y_handle);
     }
     else {
         auto functor = [=](sycl::interop_handle) {
             auto cu_handle = spsm_descr->cu_handle;
-            detail::spsm_optimize_impl(cu_handle, opA, alpha, A_view, A_handle, x_handle, y_handle,
+            detail::spsm_optimize_impl(cu_handle, opA, opX, alpha, A_view, A_handle, X_handle, Y_handle,
                                        alg, spsm_descr, nullptr, is_alpha_host_accessible);
         };
 
-        detail::dispatch_submit(__func__, queue, functor, A_handle, x_handle, y_handle);
+        detail::dispatch_submit(__func__, queue, functor, A_handle, X_handle, Y_handle);
     }
 }
 
-sycl::event spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
+sycl::event spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                          const void* alpha,
                           matrix_view A_view, matrix_handle_t A_handle,
-                          dense_vector_handle_t x_handle, dense_vector_handle_t y_handle,
+                          dense_matrix_handle_t X_handle, dense_matrix_handle_t Y_handle,
                           spsm_alg alg, spsm_descr_t spsm_descr, void* workspace,
                           const std::vector<sycl::event>& dependencies) {
     bool is_alpha_host_accessible = detail::is_ptr_accessible_on_host(queue, alpha);
     if (A_handle->all_use_buffer()) {
         detail::throw_incompatible_container(__func__);
     }
-    detail::common_spsm_optimize(opA, is_alpha_host_accessible, A_view, A_handle, x_handle,
-                                 y_handle, alg, spsm_descr);
+    detail::common_spsm_optimize(opA, opX, is_alpha_host_accessible, A_view, A_handle, X_handle,
+                                 Y_handle, alg, spsm_descr);
     // Ignore spsm_alg::no_optimize_alg as this step is mandatory for cuSPARSE
     auto functor = [=](sycl::interop_handle) {
         auto cu_handle = spsm_descr->cu_handle;
-        detail::spsm_optimize_impl(cu_handle, opA, alpha, A_view, A_handle, x_handle, y_handle, alg,
+        detail::spsm_optimize_impl(cu_handle, opA, opX, alpha, A_view, A_handle, X_handle, Y_handle, alg,
                                    spsm_descr, workspace, is_alpha_host_accessible);
     };
     // No need to store the workspace USM pointer as the backend stores it already
-    return detail::dispatch_submit(__func__, queue, dependencies, functor, A_handle, x_handle,
-                                   y_handle);
+    return detail::dispatch_submit(__func__, queue, dependencies, functor, A_handle, X_handle,
+                                   Y_handle);
 }
 
-sycl::event spsm(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alpha,
-                 matrix_view A_view, matrix_handle_t A_handle, dense_vector_handle_t x_handle,
-                 dense_vector_handle_t y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
+sycl::event spsm(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
+                 const void* alpha,
+                 matrix_view A_view, matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
+                 dense_matrix_handle_t Y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
                  const std::vector<sycl::event>& dependencies) {
     bool is_alpha_host_accessible = detail::is_ptr_accessible_on_host(queue, alpha);
-    detail::check_valid_spsm(__func__, A_view, A_handle, x_handle, y_handle,
+    detail::check_valid_spsm(__func__, A_view, A_handle, X_handle, Y_handle,
                              is_alpha_host_accessible);
     if (A_handle->all_use_buffer() != spsm_descr->workspace.use_buffer()) {
         detail::throw_incompatible_container(__func__);
@@ -258,32 +269,34 @@ sycl::event spsm(sycl::queue& queue, oneapi::mkl::transpose opA, const void* alp
                                  "spsm_optimize must be called before spsm.");
     }
     CHECK_DESCR_MATCH(spsm_descr, opA, "spsm_optimize");
+    CHECK_DESCR_MATCH(spsm_descr, opX, "spsm_optimize");
     CHECK_DESCR_MATCH(spsm_descr, A_view, "spsm_optimize");
     CHECK_DESCR_MATCH(spsm_descr, A_handle, "spsm_optimize");
-    CHECK_DESCR_MATCH(spsm_descr, x_handle, "spsm_optimize");
-    CHECK_DESCR_MATCH(spsm_descr, y_handle, "spsm_optimize");
+    CHECK_DESCR_MATCH(spsm_descr, X_handle, "spsm_optimize");
+    CHECK_DESCR_MATCH(spsm_descr, Y_handle, "spsm_optimize");
     CHECK_DESCR_MATCH(spsm_descr, alg, "spsm_optimize");
 
     bool is_in_order_queue = queue.is_in_order();
     auto functor = [=](sycl::interop_handle) {
         auto cu_handle = spsm_descr->cu_handle;
         auto cu_a = A_handle->backend_handle;
-        auto cu_x = x_handle->backend_handle;
-        auto cu_y = y_handle->backend_handle;
+        auto cu_x = X_handle->backend_handle;
+        auto cu_y = Y_handle->backend_handle;
         auto type = A_handle->value_container.data_type;
         detail::set_matrix_attributes(__func__, cu_a, A_view);
-        auto cu_op = detail::get_cuda_operation(type, opA);
+        auto cu_opA = detail::get_cuda_operation(type, opA);
+        auto cu_opX = detail::get_cuda_operation(type, opX);
         auto cu_type = detail::get_cuda_value_type(type);
         auto cu_alg = detail::get_cuda_spsm_alg(alg);
         auto cu_descr = spsm_descr->cu_descr;
         detail::set_pointer_mode(cu_handle, is_alpha_host_accessible);
-        auto status = cusparseSpSV_solve(cu_handle, cu_op, alpha, cu_a, cu_x, cu_y, cu_type, cu_alg,
+        auto status = cusparseSpSM_solve(cu_handle, cu_opA, cu_opX, alpha, cu_a, cu_x, cu_y, cu_type, cu_alg,
                                          cu_descr);
         detail::check_status(status, __func__);
         detail::synchronize_if_needed(is_in_order_queue, spsm_descr->cu_stream);
     };
     return detail::dispatch_submit_native_ext(__func__, queue, dependencies, functor, A_handle,
-                                              x_handle, y_handle);
+                                              X_handle, Y_handle);
 }
 
 } // namespace oneapi::mkl::sparse::cusparse
