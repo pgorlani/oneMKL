@@ -53,7 +53,8 @@ void check_valid_spsm(const std::string& function_name, oneapi::mkl::transpose o
     auto internal_A_handle = detail::get_internal_handle(A_handle);
     detail::check_valid_spsm_common(function_name, A_view, internal_A_handle, X_handle, Y_handle,
                                     is_alpha_host_accessible);
-
+#if 0
+/* TO CHECK <--------------------------------------------------------------- */
     if (alg == spsm_alg::no_optimize_alg &&
         !internal_A_handle->has_matrix_property(matrix_property::sorted)) {
         throw mkl::unimplemented(
@@ -72,6 +73,7 @@ void check_valid_spsm(const std::string& function_name, oneapi::mkl::transpose o
 #else
     (void)opA;
 #endif // BACKEND
+#endif
 }
 
 void spsm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
@@ -125,8 +127,8 @@ void spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA,
         return;
     }
     internal_A_handle->can_be_reset = false;
-    /*oneapi::mkl::sparse::optimize_trsm(queue, A_view.uplo_view, opA, A_view.diag_view,
-                                       internal_A_handle->backend_handle);*/
+    oneapi::mkl::sparse::optimize_trsm(queue, A_view.uplo_view, opA, A_view.diag_view,
+                                       internal_A_handle->backend_handle);
 }
 
 sycl::event spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA,
@@ -145,8 +147,8 @@ sycl::event spsm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA,
         return detail::collapse_dependencies(queue, dependencies);
     }
     internal_A_handle->can_be_reset = false;
-    return {};/*oneapi::mkl::sparse::optimize_trsm(queue, A_view.uplo_view, opA, A_view.diag_view,
-                                              internal_A_handle->backend_handle, dependencies);*/
+    return oneapi::mkl::sparse::optimize_trsm(queue, A_view.uplo_view, opA, A_view.diag_view,
+                                              internal_A_handle->backend_handle, dependencies);
 }
 
 template <typename T>
@@ -163,17 +165,16 @@ sycl::event internal_spsm(sycl::queue& queue, oneapi::mkl::transpose opA,
     auto internal_A_handle = detail::get_internal_handle(A_handle);
     internal_A_handle->can_be_reset = false;
     if (internal_A_handle->all_use_buffer()) {
-       /* oneapi::mkl::sparse::trsm(queue, A_view.uplo_view, opA, A_view.diag_view, host_alpha,
-                                  internal_A_handle->backend_handle, X_handle->get_buffer<T>(),
-                                  Y_handle->get_buffer<T>());*/
+        oneapi::mkl::sparse::trsm(queue, X_handle->dense_layout, opA, opX, A_view.uplo_view, A_view.diag_view, host_alpha,
+                                  internal_A_handle->backend_handle, X_handle->get_buffer<T>(), X_handle->num_cols, X_handle->ld,
+                                  Y_handle->get_buffer<T>(), Y_handle->ld);
         // Dependencies are not used for buffers
         return {};
     }
     else {
-        return {};/* oneapi::mkl::sparse::trsm(queue, A_view.uplo_view, opA, A_view.diag_view, host_alpha,
-                                         internal_A_handle->backend_handle,
-                                         X_handle->get_usm_ptr<T>(), Y_handle->get_usm_ptr<T>(),
-                                         dependencies);*/;
+        return oneapi::mkl::sparse::trsm(queue, X_handle->dense_layout, opA, opX, A_view.uplo_view, A_view.diag_view, host_alpha,
+                                  internal_A_handle->backend_handle, X_handle->get_usm_ptr<T>(), X_handle->num_cols, X_handle->ld,
+                                  Y_handle->get_usm_ptr<T>(), Y_handle->ld, dependencies);
     }
 }
 

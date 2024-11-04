@@ -24,7 +24,7 @@ set(SPBLAS_SOURCES
   "sparse_spmv_usm.cpp"
   "sparse_spsv_buffer.cpp"
   "sparse_spsv_usm.cpp"
-#  "sparse_spsm_buffer.cpp"
+  "sparse_spsm_buffer.cpp"
 #  "sparse_spsm_usm.cpp"
 )
 
