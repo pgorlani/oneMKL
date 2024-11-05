@@ -82,7 +82,7 @@ inline void common_spsm_optimize(oneapi::mkl::transpose opA, oneapi::mkl::transp
     }
     spsm_descr->optimized_called = true;
     spsm_descr->last_optimized_opA = opA;
-    spsm_descr->last_optimized_opA = opX;
+    spsm_descr->last_optimized_opX = opX;
     spsm_descr->last_optimized_A_view = A_view;
     spsm_descr->last_optimized_A_handle = A_handle;
     spsm_descr->last_optimized_X_handle = X_handle;
