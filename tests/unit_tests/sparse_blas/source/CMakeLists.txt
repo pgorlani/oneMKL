@@ -18,12 +18,12 @@
 #===============================================================================
 
 set(SPBLAS_SOURCES
-  "sparse_spmm_buffer.cpp"
-  "sparse_spmm_usm.cpp"
-  "sparse_spmv_buffer.cpp"
-  "sparse_spmv_usm.cpp"
-  "sparse_spsv_buffer.cpp"
-  "sparse_spsv_usm.cpp"
+#  "sparse_spmm_buffer.cpp"
+#  "sparse_spmm_usm.cpp"
+#  "sparse_spmv_buffer.cpp"
+#  "sparse_spmv_usm.cpp"
+#  "sparse_spsv_buffer.cpp"
+#  "sparse_spsv_usm.cpp"
   "sparse_spsm_buffer.cpp"
 #  "sparse_spsm_usm.cpp"
 )

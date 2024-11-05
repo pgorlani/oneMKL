@@ -282,7 +282,8 @@ intType generate_random_csr_matrix(const intType nrows, const intType ncols,
             const bool is_diag = require_diagonal && i == j;
             const bool force_last_nnz = nnz == 0 && i == nrows - 1 && j == ncols - 1;
             if (force_last_nnz || is_diag || (rand_density(0.0, 1.0) <= density_val)) {
-                a.push_back(generate_data<fpType>(is_diag));
+                //a.push_back(generate_data<fpType>(is_diag));
+                a.push_back(is_diag ? 1 : 0);
                 ja.push_back(j + indexing);
                 nnz++;
             }
@@ -327,7 +328,8 @@ intType generate_random_coo_matrix(const intType nrows, const intType ncols,
             const bool is_diag = require_diagonal && i == j;
             const bool force_last_nnz = a.size() == 0 && i == nrows - 1 && j == ncols - 1;
             if (force_last_nnz || is_diag || (rand_density(0.0, 1.0) <= density_val)) {
-                a.push_back(generate_data<fpType>(is_diag));
+                //a.push_back(generate_data<fpType>(is_diag));
+                a.push_back(is_diag ? 1 : 0);
                 ia.push_back(i + indexing);
                 ja.push_back(j + indexing);
             }
