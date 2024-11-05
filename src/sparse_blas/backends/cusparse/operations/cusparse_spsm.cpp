@@ -61,20 +61,28 @@ inline auto get_cuda_spsm_alg(spsm_alg /*alg*/) {
     return CUSPARSE_SPSM_ALG_DEFAULT;  // <----------------------------------------------
 }
 
-void check_valid_spsm(const std::string& function_name, matrix_view A_view,
+void check_valid_spsm(const std::string& function_name, oneapi::mkl::transpose opA,
+                      oneapi::mkl::transpose opX,
+                      matrix_view A_view,
                       matrix_handle_t A_handle, dense_matrix_handle_t X_handle,
                       dense_matrix_handle_t Y_handle, bool is_alpha_host_accessible) {
     check_valid_spsm_common(function_name, A_view, A_handle, X_handle, Y_handle,
                             is_alpha_host_accessible);
     check_valid_matrix_properties(function_name, A_handle);
-}
+    (void)opA;
+    if (opX == oneapi::mkl::transpose::conjtrans) {
+        throw mkl::unimplemented(
+            "sparse_blas", function_name,
+            "The backend does not support spmm with the algorithm `spmm_alg::csr_alg3` if `opB` is `transpose::conjtrans`.");
+    }
+ }
 
 inline void common_spsm_optimize(oneapi::mkl::transpose opA, oneapi::mkl::transpose opX,
                                  bool is_alpha_host_accessible,
                                  matrix_view A_view, matrix_handle_t A_handle,
                                  dense_matrix_handle_t X_handle, dense_matrix_handle_t Y_handle,
                                  spsm_alg alg, spsm_descr_t spsm_descr) {
-    check_valid_spsm("spsm_optimize", A_view, A_handle, X_handle, Y_handle,
+    check_valid_spsm("spsm_optimize", opA, opX, A_view, A_handle, X_handle, Y_handle,
                      is_alpha_host_accessible);
     if (!spsm_descr->buffer_size_called) {
         throw mkl::uninitialized("sparse_blas", "spsm_optimize",
@@ -165,7 +173,7 @@ void spsm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mk
                       dense_matrix_handle_t Y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
                       std::size_t& temp_buffer_size) {
     bool is_alpha_host_accessible = detail::is_ptr_accessible_on_host(queue, alpha);
-    detail::check_valid_spsm(__func__, A_view, A_handle, X_handle, Y_handle,
+    detail::check_valid_spsm(__func__, opA, opX, A_view, A_handle, X_handle, Y_handle,
                              is_alpha_host_accessible);
     auto functor = [=, &temp_buffer_size](sycl::interop_handle ih) {
         detail::CusparseScopedContextHandler sc(queue, ih);
@@ -258,7 +266,7 @@ sycl::event spsm(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::tr
                  dense_matrix_handle_t Y_handle, spsm_alg alg, spsm_descr_t spsm_descr,
                  const std::vector<sycl::event>& dependencies) {
     bool is_alpha_host_accessible = detail::is_ptr_accessible_on_host(queue, alpha);
-    detail::check_valid_spsm(__func__, A_view, A_handle, X_handle, Y_handle,
+    detail::check_valid_spsm(__func__, opA, opX, A_view, A_handle, X_handle, Y_handle,
                              is_alpha_host_accessible);
     if (A_handle->all_use_buffer() != spsm_descr->workspace.use_buffer()) {
         detail::throw_incompatible_container(__func__);
