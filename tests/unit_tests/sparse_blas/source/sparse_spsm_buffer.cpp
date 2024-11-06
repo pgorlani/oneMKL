@@ -255,8 +255,7 @@ TEST_P(parseSpsmBufferTests, ComplexDoublePrecision) {
                      << " configurations." << std::endl;
     }
 }
-
-INSTANTIATE_TEST_SUITE_P(SparseSpsvBufferTestSuite, parseSpsmBufferTests,
+INSTANTIATE_TEST_SUITE_P(SparseSpsmBufferTestSuite, parseSpsmBufferTests,
                          testing::ValuesIn(devices), ::DeviceNamePrint());
 
 } // anonymous namespace
