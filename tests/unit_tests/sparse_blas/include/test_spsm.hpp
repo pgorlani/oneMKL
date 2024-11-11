@@ -94,9 +94,9 @@ template <typename fpType, typename testFunctorI32, typename testFunctorI64>
 void test_helper(testFunctorI32 test_functor_i32, testFunctorI64 test_functor_i64,
                  sycl::device* dev, oneapi::mkl::transpose transpose_val, int& num_passed,
                  int& num_skipped) {
-//    test_helper_with_format<fpType>(test_functor_i32, test_functor_i64, dev,
-//                                    sparse_matrix_format_t::CSR, transpose_val, num_passed,
-//                                    num_skipped);
+    test_helper_with_format<fpType>(test_functor_i32, test_functor_i64, dev,
+                                    sparse_matrix_format_t::CSR, transpose_val, num_passed,
+                                    num_skipped);
     test_helper_with_format<fpType>(test_functor_i32, test_functor_i64, dev,
                                     sparse_matrix_format_t::COO, transpose_val, num_passed,
                                     num_skipped);
