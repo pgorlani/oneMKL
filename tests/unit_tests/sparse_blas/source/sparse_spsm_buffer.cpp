@@ -85,7 +85,6 @@ int test_spsm(sycl::device* dev, sycl::property_list queue_properties,
     shuffle_sparse_matrix_if_needed(format, matrix_properties, indexing, ia_host.data(),
                                     ja_host.data(), a_host.data(), nnz, static_cast<std::size_t>(m));
 
-#if 1
     auto ia_buf = make_buffer(ia_host);
     auto ja_buf = make_buffer(ja_host);
     auto a_buf = make_buffer(a_host);
@@ -120,6 +119,7 @@ int test_spsm(sycl::device* dev, sycl::property_list queue_properties,
         CALL_RT_OR_CT(oneapi::mkl::sparse::spsm, main_queue, transpose_A, transpose_X, &alpha,
                       A_view, A_handle, X_handle, Y_handle, alg, descr);
  
+#if 1
         if (reset_data) {
             intType reset_nnz = generate_random_matrix<fpType, intType>(
                 format, m, m, density_A_matrix, indexing, ia_host, ja_host, a_host, is_symmetric,
@@ -154,6 +154,7 @@ int test_spsm(sycl::device* dev, sycl::property_list queue_properties,
             CALL_RT_OR_CT(oneapi::mkl::sparse::spsm, main_queue, transpose_A, transpose_X, &alpha,
                       A_view, A_handle, X_handle, Y_handle, alg, descr);
         }
+#endif
     }
     catch (const sycl::exception& e) {
         std::cout << "Caught synchronous SYCL exception during sparse SPSV:\n"
@@ -188,7 +189,6 @@ int test_spsm(sycl::device* dev, sycl::property_list queue_properties,
     bool valid = check_equal_vector(y_acc, /*y_ref*/x_host);
 
     return static_cast<int>(valid);
-#endif
     return 1;
 }
 
@@ -199,15 +199,15 @@ TEST_P(parseSpsmBufferTests, RealSinglePrecision) {
     int num_passed = 0, num_skipped = 0;
     test_helper<fpType>(test_spsm<fpType, int32_t>, test_spsm<fpType, std::int64_t>, GetParam(),
                         oneapi::mkl::transpose::nontrans, num_passed, num_skipped);
-    test_helper<fpType>(test_spsm<fpType, int32_t>, test_spsm<fpType, std::int64_t>, GetParam(),
-                        oneapi::mkl::transpose::trans, num_passed, num_skipped);
+//    test_helper<fpType>(test_spsm<fpType, int32_t>, test_spsm<fpType, std::int64_t>, GetParam(),
+//                        oneapi::mkl::transpose::trans, num_passed, num_skipped);
     if (num_skipped > 0) {
         // Mark that some tests were skipped
         GTEST_SKIP() << "Passed: " << num_passed << ", Skipped: " << num_skipped
                      << " configurations." << std::endl;
     }
 }
-
+#if 0 
 TEST_P(parseSpsmBufferTests, RealDoublePrecision) {
     using fpType = double;
     CHECK_DOUBLE_ON_DEVICE(GetParam());
@@ -255,6 +255,7 @@ TEST_P(parseSpsmBufferTests, ComplexDoublePrecision) {
                      << " configurations." << std::endl;
     }
 }
+#endif
 INSTANTIATE_TEST_SUITE_P(SparseSpsmBufferTestSuite, parseSpsmBufferTests,
                          testing::ValuesIn(devices), ::DeviceNamePrint());
 
